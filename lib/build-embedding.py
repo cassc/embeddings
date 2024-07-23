@@ -17,12 +17,13 @@ from tqdm import tqdm
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from ai import common
+from lib import common
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model-name', type=str, help='Model name or local path containing the model, must be the same as the the model used to build the embeddings', required=True)
 parser.add_argument('--embeddings-db-path', type=str, help='Duckdb path of the emebddings database', required=True)
 parser.add_argument('--function-db-path', type=str, help='Duckdb path of the function database. If not provided, function source code will not be printed', required=False)
+parser.add_argument('--max-length', type=int, help='Maximum length of the input text, longer text will be truncated', default=1024)
 
 args = parser.parse_args()
 
@@ -37,8 +38,8 @@ model = AutoModel.from_pretrained(model_path)
 
 print(f'Building embeddings using model {model_name}')
 
-def cal_embedding(text):
-    tokens = tokenizer(text, return_tensors='pt')
+def cal_embedding(text, max_length=args.max_length, truncation=True):
+    tokens = tokenizer(text, return_tensors='pt', max_length=max_length, truncation=truncation)
     with torch.no_grad():
         return model(**tokens).last_hidden_state.mean(dim=1).numpy().flatten().tolist()
 
@@ -64,17 +65,14 @@ except Exception as e:
 results = function_con.execute("SELECT id, contract_id, selector,source_code, signature FROM 'function' where source_code!=?", [""]).fetchall()
 
 # from code hash to embedding
-code_hash_to_ids = dict()
+code_hash_seen = set()
 
 for r in tqdm(results, desc="Calculating embeddings", ncols=80):
     id, contract_id, selector, source_code, signature = r
     code_hash = common.sha256(source_code)
-    ids = code_hash_to_ids.get(code_hash, [])
-    if not ids:
+    if code_hash not in code_hash_seen:
         em = cal_embedding(source_code)
-        ids.append(id)
+        code_hash_seen.add(code_hash)
         embeddings_con.execute("INSERT OR IGNORE INTO embeddings VALUES (?, ?)", [code_hash, em])
-    else:
-        ids.append(id)
+
     embeddings_con.execute("INSERT OR IGNORE INTO function_code_hash VALUES (?, ?)", [id, code_hash]);
-    code_hash_to_ids[code_hash] = ids
