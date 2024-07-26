@@ -64,11 +64,17 @@ except Exception as e:
 
 results = function_con.execute("SELECT id, contract_id, selector,source_code, signature FROM 'function' where source_code!=?", [""]).fetchall()
 
+def check_function_processed(id):
+    return embeddings_con.execute("SELECT function_id FROM function_code_hash WHERE function_id=? limit 1", [id]).fetchone() is not None
+
 # from code hash to embedding
 code_hash_seen = set()
 
 for r in tqdm(results, desc="Calculating embeddings", ncols=80):
     id, contract_id, selector, source_code, signature = r
+    if check_function_processed(id):
+        continue
+
     code_hash = common.sha256(source_code)
     if code_hash not in code_hash_seen:
         em = cal_embedding(source_code)
