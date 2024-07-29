@@ -13,10 +13,6 @@ import sys
 import argparse
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-# python lib/use-embedding.py --model-name /data-ssd/chen/starencoder/ --embeddings-db-path /data-ssd/chen/embeddings.0729.duckdb --function-db-path /data-ssd/chen/contracts.duckdb --limit 10 \
-    '
-    implmentation of liquidity removal
-    '
 
 
 parser = argparse.ArgumentParser()
