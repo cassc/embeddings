@@ -13,7 +13,11 @@ import sys
 import argparse
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from ai import common
+# python lib/use-embedding.py --model-name /data-ssd/chen/starencoder/ --embeddings-db-path /data-ssd/chen/embeddings.0729.duckdb --function-db-path /data-ssd/chen/contracts.duckdb --limit 10 \
+    '
+    implmentation of liquidity removal
+    '
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--model-name', type=str, help='Model name or local path containing the model, must be the same as the the model used to build the embeddings', required=True)
@@ -21,12 +25,13 @@ parser.add_argument('--embeddings-db-path', type=str, help='Duckdb path of the e
 parser.add_argument('--function-db-path', type=str, help='Duckdb path of the function database. If not provided, function source code will not be printed', required=False)
 parser.add_argument('--max-length', type=int, help='Maximum length of the input text, longer text will be truncated', default=1024)
 parser.add_argument('--limit', type=int, help='Number of top matches to return', default=5)
+parser.add_argument('--verbose', action='store_true', help='Print function ids and code hashes')
 parser.add_argument('query', type=str, help='Query string to search for similar documents')
 
 args = parser.parse_args()
 
 
-
+verbose = args.verbose
 model_path = args.model_name
 model_name = model_path.split("/")[-1]
 embedding_size = 768
@@ -53,12 +58,12 @@ results = embeddings_con.execute(query_sql, [em, args.limit]).fetchall()
 
 print(f'Top {args.limit} matches for query "{args.query}":')
 for r in results:
-    print(f'Code hash: {r[0]}')
+    if verbose: print(f'Code hash: {r[0]}')
     if not functions_con:
         continue
     if functions_con:
         function_ids = embeddings_con.execute(f"SELECT function_id FROM function_code_hash WHERE code_hash = ?", [r[0]]).fetchall()
-        print('Function ids:', function_ids)
+        if verbose: print('Function ids:', function_ids)
         fid = function_ids[0][0]
         function = functions_con.execute(f"SELECT source_code FROM function WHERE id = ?", [fid]).fetchall()
-        print('Function source code:', function[0][0])
+        print('Function source code:\n', function[0][0])
