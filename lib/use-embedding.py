@@ -1,13 +1,6 @@
-from typing import List
 import torch
-from transformers import RobertaTokenizer, RobertaConfig, RobertaModel, AutoTokenizer, AutoModel
-import chromadb
-from chromadb import Documents, EmbeddingFunction, Embeddings
+from transformers import  AutoTokenizer, AutoModel
 import os
-from chromadb.types import Metadata
-import chromadb.utils.embedding_functions as embedding_functions
-import hashlib
-import numpy as np
 import duckdb
 import sys
 import argparse
