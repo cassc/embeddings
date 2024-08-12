@@ -50,7 +50,9 @@ def process_message(message):
     logger.info(f"Processing message: {message}")
     body = message['Body']
     body = json.loads(body)
+    peer_id = body['peer_id']
     query = body['data']['payload']
+    id = body['data']['id']
     limit = body['data'].get('limit', 10)
 
     em = cal_embedding(query)
@@ -66,10 +68,27 @@ def process_message(message):
         function = functions_con.execute(f"SELECT source_code FROM function WHERE id = ?", [fid]).fetchall()[0]
         if not function:
             logger.warn('Function not found with id:', dict(fid=fid, code_hash=r[0]))
-        found.append[function]
+        found.append(function)
+
+    msg = dict(peer_id=peer_id, result=dict(found=found, id=id))
+    publish_message(json.dumps(msg))
 
 
-    print(f'Found {found}')
+def publish_message(msg: str):
+    """
+    Publish the processed result message to the result queue
+    """
+    try:
+        response = sqs.send_message(
+            QueueUrl=sqs_result_queue_url,
+            MessageBody=msg
+        )
+        return response
+    except Exception as e:
+        logger.error(f"Failed to publish message to queue: {e}")
+        return None
+
+
 
 
 def delete_message(receipt_handle):
@@ -105,9 +124,11 @@ def poll_queue():
             for message in messages:
                 try:
                     process_message(message)
-                    delete_message(message['ReceiptHandle'])
                 except Exception as e:
                     logger.error('Process messasge error', message, stack_info=True, exc_info=e)
+                finally:
+                    delete_message(message['ReceiptHandle'])
+
 
         except Exception as e:
             logger.error(f"Error receiving messages: {e}")
