@@ -7,7 +7,8 @@ import os
 import duckdb
 import sys
 import json
-
+from dotenv import load_dotenv
+load_dotenv('.envrc')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -68,9 +69,9 @@ def process_message(message):
         function = functions_con.execute(f"SELECT source_code FROM function WHERE id = ?", [fid]).fetchall()[0]
         if not function:
             logger.warn('Function not found with id:', dict(fid=fid, code_hash=r[0]))
-        found.append(function)
+        found.append(function[0]) # get the source_code only
 
-    msg = dict(peer_id=peer_id, result=dict(found=found, id=id))
+    msg = dict(peer_id=peer_id, result=json.dumps(dict(found=found, id=id)))
     publish_message(json.dumps(msg))
 
 
