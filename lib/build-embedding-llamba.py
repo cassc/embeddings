@@ -1,6 +1,7 @@
 from typing import List
 import torch
 from transformers import RobertaTokenizer, RobertaConfig, RobertaModel, AutoTokenizer, AutoModel
+from transformers import LlamaTokenizer, LlamaModel
 import chromadb
 from chromadb import Documents, EmbeddingFunction, Embeddings
 import os
@@ -20,9 +21,13 @@ from lib import common
 
 # args = parser.parse_args()
 
-model_name = "/data-ssd/chen/llama-models/models/llama3_1/Meta-Llama-3.1-70B-Instruct"
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModel.from_pretrained(model_name)
+# Load the tokenizer and model
+tokenizer = LlamaTokenizer.from_pretrained("/data-ssd/chen/llama-models/models/Meta-Llama-3.1-70B")
+model = LlamaModel.from_pretrained("/data-ssd/chen/llama-models/models/Meta-Llama-3.1-70B-Instruct")
+
+# Move model to GPU if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 inputs = tokenizer("Your input text here", return_tensors="pt")
 outputs = model(**inputs)
