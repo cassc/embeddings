@@ -66,7 +66,7 @@ def process_message(message):
     for r in results:
         function_ids = embeddings_con.execute(f"SELECT function_id FROM function_code_hash WHERE code_hash = ?", [r[0]]).fetchall()
         fid = function_ids[0][0]
-        function = functions_con.execute(f"SELECT source_code FROM function WHERE id = ?", [fid]).fetchall()[0]
+        function = functions_con.execute(f"SELECT source_code FROM functions WHERE id = ?", [fid]).fetchall()[0]
         if not function:
             logger.warn('Function not found with id:', dict(fid=fid, code_hash=r[0]))
         found.append(function[0]) # get the source_code only
